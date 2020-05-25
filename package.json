@@ -1,0 +1,35 @@
+{
+  "name": "mangacomicsportalbot",
+  "version": "1.0.0",
+  "description": "Telegram Bot for Manga and Comics",
+  "main": "index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "prestart": "npm run build",
+    "build": "tsc",
+    "watch": "nodemon src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kao-dev/MangaComicsPortalBot.git"
+  },
+  "author": "Kao Dev <kao-dev@tutanota.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kao-dev/MangaComicsPortalBot/issues"
+  },
+  "homepage": "https://github.com/kao-dev/MangaComicsPortalBot#readme",
+  "devDependencies": {
+    "@types/express": "^4.17.6",
+    "@types/node": "^14.0.5",
+    "nodemon": "^2.0.4",
+    "ts-node": "^8.10.1",
+    "typescript": "^3.9.3"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "telegraf": "^3.38.0",
+    "telegraf-ratelimit": "^2.0.0"
+  }
+}

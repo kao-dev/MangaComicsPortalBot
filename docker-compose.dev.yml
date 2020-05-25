@@ -1,0 +1,11 @@
+version: "3.7"
+services:
+  server:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - ./src:/usr/src/app/src
+      - ./nodemon.json:/usr/src/app/nodemon.json
+    ports:
+      - "8080:8080"
