@@ -3,8 +3,9 @@ import express from "express";
 
 import { CallbackButton } from "telegraf/typings/markup";
 
-import { search_mangaeden } from "./MangaEden";
-import { Sources } from "./Util";
+import { Sources, Item } from "./Util";
+import { search_mangaeden } from "./Sources/MangaEden";
+import { search_zipcomic } from "./Sources/ZipComic";
 
 // ### Setup
 
@@ -12,9 +13,14 @@ const { NODE_ENV } = process.env;
 
 if (NODE_ENV !== "production") require("dotenv").config();
 
-const { PORT, TELEGRAM_TOKEN, URL, MANGAEDEN_URL } = process.env;
+const { PORT, TELEGRAM_TOKEN, URL, MANGAEDEN_URL, ZIPCOMIC_URL } = process.env;
 
-if (!TELEGRAM_TOKEN || !MANGAEDEN_URL || (NODE_ENV === "production" && !URL))
+if (
+  !TELEGRAM_TOKEN ||
+  !MANGAEDEN_URL ||
+  !ZIPCOMIC_URL ||
+  (NODE_ENV === "production" && !URL)
+)
   throw new Error("Environment variables can't be null");
 
 const Bot = new Telegraf(TELEGRAM_TOKEN);
@@ -38,21 +44,44 @@ Bot.on("text", async (ctx) => {
   });
 });
 
-Bot.on("callback_query", (ctx) => {
+Bot.on("callback_query", async (ctx) => {
   ctx.deleteMessage();
   const data = ctx.callbackQuery!.data!.split(/search:(.+):(.+)/);
   const source = Number(data[1]);
   const text = data[2];
-  switch (source) {
-    case 0: // Manga Eden EN
-    case 1: // Manga Eden IT
-      search_mangaeden(ctx, source, text);
-      break;
-    case 2: // American Comics
-      ctx.reply("American Comics not implemented");
-      break;
+  let items = new Array<Item>();
+  try {
+    switch (source) {
+      case 0: // Manga Eden EN
+      case 1: // Manga Eden IT
+        items = await search_mangaeden(source, text);
+        break;
+      case 2: // ZipComic
+        items = await search_zipcomic(text);
+        break;
+    }
+  } catch (error) {
+    ctx.reply(`There was an error: ${error}`);
   }
-  return ctx.answerCbQuery();
+  if (items.length === 0) {
+    ctx.reply(`I couldn't find any items on ${Sources[source]}`);
+    return;
+  }
+  if (items.length > 8) items.length = 8;
+
+  const inline_keyboard: CallbackButton[][] = items.map((i) => [
+    {
+      text: i.title,
+      callback_data: `info:${source}:${i.id}`,
+      hide: false,
+    },
+  ]);
+
+  ctx.reply(`Here's what I found on ${Sources[source]}`, {
+    reply_markup: { inline_keyboard },
+  });
+
+  ctx.answerCbQuery();
 });
 
 // ### Running
