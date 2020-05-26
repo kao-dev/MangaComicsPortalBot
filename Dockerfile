@@ -1,13 +1,3 @@
-# Development Build and Run
-FROM node:lts-alpine AS dev
-WORKDIR /usr/src/app
-
-COPY package*.json ./
-RUN npm install
-
-COPY . .
-CMD [ "npm", "run", "watch" ]
-
 # Production Build
 FROM node:lts-alpine AS build
 WORKDIR /usr/src/app
@@ -19,7 +9,7 @@ COPY . .
 RUN npm run build
 
 # Production Run
-FROM node:lts-alpine AS prod
+FROM node:lts-alpine
 WORKDIR /usr/src/app
 
 COPY package*.json ./
