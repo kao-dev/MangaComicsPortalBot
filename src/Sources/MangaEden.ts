@@ -43,3 +43,17 @@ export async function info_mangaeden(id: string) {
     return error;
   }
 }
+
+export async function chapter_mangaeden(id: string) {
+  try {
+    const { MANGAEDEN_URL } = process.env;
+    const response = await fetch(`${MANGAEDEN_URL}/api/chapter/${id}`);
+    const json = await response.json();
+    const images = json.images
+      .map((i: any[]) => `https://cdn.mangaeden.com/mangasimg/${i[1]}`)
+      .reverse();
+    return images;
+  } catch (error) {
+    return error;
+  }
+}

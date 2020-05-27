@@ -5,8 +5,16 @@ import { CallbackButton } from "telegraf/typings/markup";
 import { TelegrafContext } from "telegraf/typings/context";
 
 import { Sources, Item, ItemInfo } from "./Util";
-import { search_mangaeden, info_mangaeden } from "./Sources/MangaEden";
-import { search_zipcomic, info_zipcomic } from "./Sources/ZipComic";
+import {
+  search_mangaeden,
+  info_mangaeden,
+  chapter_mangaeden,
+} from "./Sources/MangaEden";
+import {
+  search_zipcomic,
+  info_zipcomic,
+  chapter_zipcomic,
+} from "./Sources/ZipComic";
 
 // ### Setup
 
@@ -46,21 +54,24 @@ Bot.on("text", async (ctx) => {
 });
 
 Bot.on("callback_query", async (ctx) => {
-  ctx.deleteMessage();
   const data = ctx.callbackQuery!.data!.split(/(.+):(.+):(.+)/);
   const step = data[1];
   const source = Number(data[2]);
   const text = data[3];
   switch (step) {
     case "search":
+      ctx.deleteMessage();
       search(ctx, source, text);
       break;
     case "info":
+      ctx.deleteMessage();
       info(ctx, source, text);
       break;
     case "chapter":
+      chapter(ctx, source, text);
       break;
     default:
+      ctx.deleteMessage();
       ctx.replyWithMarkdown(`Error: Unrecognized step: \`${step}\``);
       break;
   }
@@ -130,6 +141,44 @@ async function info(ctx: TelegrafContext, source: number, id: string) {
     caption: info!.item.title,
     reply_markup: { inline_keyboard },
   });
+}
+
+async function chapter(ctx: TelegrafContext, source: number, id: string) {
+  let images = new Array<string>();
+  try {
+    switch (source) {
+      case 0: // Manga Eden EN
+      case 1: // Manga Eden IT
+        images = await chapter_mangaeden(id);
+        break;
+      case 2: // ZipComic
+        images = await chapter_zipcomic(id);
+        break;
+    }
+  } catch (error) {
+    ctx.reply(`There was an error: ${error}`);
+  }
+
+  ctx.reply("Sending chapter...");
+  sendPhotos(ctx, images, 0);
+}
+
+async function sendPhotos(
+  ctx: TelegrafContext,
+  images: string[],
+  index: number
+) {
+  if (images[index]) {
+    setTimeout(async () => {
+      await ctx.replyWithPhoto(images[index], {
+        caption: (index + 1).toString(),
+        disable_notification: true,
+      });
+      sendPhotos(ctx, images, ++index);
+    }, 500);
+  } else {
+    ctx.reply("Chapter sent");
+  }
 }
 
 // ### Running

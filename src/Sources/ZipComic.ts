@@ -60,3 +60,21 @@ export async function info_zipcomic(id: string) {
     return error;
   }
 }
+
+export async function chapter_zipcomic(id: string) {
+  try {
+    const { ZIPCOMIC_URL } = process.env;
+    const response = await fetch(`${ZIPCOMIC_URL}/${id}`);
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const images = new Array<string>();
+    $("#images")
+      .find("img")
+      .each((_, el) => {
+        images.push($(el).attr("src")!.trim().replace("http://", "https://"));
+      });
+    return images;
+  } catch (error) {
+    return error;
+  }
+}
