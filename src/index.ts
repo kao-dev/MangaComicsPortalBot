@@ -204,24 +204,25 @@ async function chapter(ctx: TelegrafContext, source: number, id: string) {
   }
 
   ctx.reply("Sending chapter...");
-  sendPhotos(ctx, images, 0);
+  sendPhotos(ctx, images, 0, ctx.callbackQuery!.from.id);
 }
 
 async function sendPhotos(
   ctx: TelegrafContext,
   images: string[],
-  index: number
+  index: number,
+  id: number
 ) {
   if (images[index]) {
-    setTimeout(async () => {
-      await ctx.replyWithPhoto(images[index], {
+    return setTimeout(async () => {
+      await ctx.telegram.sendPhoto(id, images[index], {
         caption: (index + 1).toString(),
         disable_notification: true,
       });
-      sendPhotos(ctx, images, ++index);
+      sendPhotos(ctx, images, ++index, id);
     }, 500);
   } else {
-    ctx.reply("Chapter sent");
+    return ctx.reply("Chapter sent");
   }
 }
 
