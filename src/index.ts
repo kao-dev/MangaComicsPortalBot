@@ -2,10 +2,11 @@ import Telegraf from "telegraf";
 import express from "express";
 
 import { CallbackButton } from "telegraf/typings/markup";
+import { TelegrafContext } from "telegraf/typings/context";
 
-import { Sources, Item } from "./Util";
-import { search_mangaeden } from "./Sources/MangaEden";
-import { search_zipcomic } from "./Sources/ZipComic";
+import { Sources, Item, ItemInfo } from "./Util";
+import { search_mangaeden, info_mangaeden } from "./Sources/MangaEden";
+import { search_zipcomic, info_zipcomic } from "./Sources/ZipComic";
 
 // ### Setup
 
@@ -46,9 +47,28 @@ Bot.on("text", async (ctx) => {
 
 Bot.on("callback_query", async (ctx) => {
   ctx.deleteMessage();
-  const data = ctx.callbackQuery!.data!.split(/search:(.+):(.+)/);
-  const source = Number(data[1]);
-  const text = data[2];
+  const data = ctx.callbackQuery!.data!.split(/(.+):(.+):(.+)/);
+  const step = data[1];
+  const source = Number(data[2]);
+  const text = data[3];
+  switch (step) {
+    case "search":
+      search(ctx, source, text);
+      break;
+    case "info":
+      info(ctx, source, text);
+      break;
+    case "chapter":
+      break;
+    default:
+      ctx.replyWithMarkdown(`Error: Unrecognized step: \`${step}\``);
+      break;
+  }
+
+  ctx.answerCbQuery();
+});
+
+async function search(ctx: TelegrafContext, source: number, text: string) {
   let items = new Array<Item>();
   try {
     switch (source) {
@@ -80,9 +100,37 @@ Bot.on("callback_query", async (ctx) => {
   ctx.reply(`Here's what I found on ${Sources[source]}`, {
     reply_markup: { inline_keyboard },
   });
+}
 
-  ctx.answerCbQuery();
-});
+async function info(ctx: TelegrafContext, source: number, id: string) {
+  let info: ItemInfo;
+  try {
+    switch (source) {
+      case 0: // Manga Eden EN
+      case 1: // Manga Eden IT
+        info = await info_mangaeden(id);
+        break;
+      case 2: // ZipComic
+        info = await info_zipcomic(id);
+        break;
+    }
+  } catch (error) {
+    ctx.reply(`There was an error: ${error}`);
+  }
+
+  const inline_keyboard: CallbackButton[][] = info!.chapters.map((c) => [
+    {
+      text: c.title,
+      callback_data: `chapter:${source}:${c.id}`,
+      hide: false,
+    },
+  ]);
+
+  ctx.replyWithPhoto(info!.image, {
+    caption: info!.item.title,
+    reply_markup: { inline_keyboard },
+  });
+}
 
 // ### Running
 

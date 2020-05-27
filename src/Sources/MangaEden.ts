@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-import { Item } from "../Util";
+import { Item, Chapter, ItemInfo } from "../Util";
 
 export async function search_mangaeden(lang: number, text: string) {
   try {
@@ -16,6 +16,29 @@ export async function search_mangaeden(lang: number, text: string) {
         title: m.t,
       }));
     return mangas;
+  } catch (error) {
+    return error;
+  }
+}
+
+export async function info_mangaeden(id: string) {
+  try {
+    const { MANGAEDEN_URL } = process.env;
+    const response = await fetch(`${MANGAEDEN_URL}/api/manga/${id}`);
+    const json = await response.json();
+    const chapters: Chapter[] = json.chapters.map((c: any[]) => ({
+      id: c[3],
+      title: `${c[0]} - ${c[2]}`,
+    }));
+    const manga: ItemInfo = {
+      item: {
+        id,
+        title: `${json.title} | Author: ${json.author} | Artist: ${json.artist}`,
+      },
+      image: `https://cdn.mangaeden.com/mangasimg/${json.image}`,
+      chapters,
+    };
+    return manga;
   } catch (error) {
     return error;
   }
