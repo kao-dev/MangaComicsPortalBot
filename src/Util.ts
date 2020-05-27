@@ -1,4 +1,4 @@
-export const Sources = ["Manga Eden [EN]", "Manga Eden [IT]", "ZipComics [EN]"];
+export const Sources = ["Manga Eden [EN]", "Manga Eden [IT]", "ZipComic [EN]"];
 
 export interface Item {
   id: string;

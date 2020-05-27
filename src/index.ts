@@ -143,7 +143,7 @@ async function info(
       inline_keyboard.push([
         {
           text: `${info!.chapters[index].title}`,
-          callback_data: `chapter:${source}:${info!.chapters[index].title}:0`,
+          callback_data: `chapter:${source}:${info!.chapters[index].id}:0`,
           hide: false,
         },
       ]);
