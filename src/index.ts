@@ -43,7 +43,7 @@ Bot.on("text", async (ctx) => {
   const inline_keyboard: CallbackButton[][] = Sources.map((s, index) => [
     {
       text: s,
-      callback_data: `search:${index}:${ctx.message!.text!}`,
+      callback_data: `search:${index}:${ctx.message!.text!}:0`,
       hide: false,
     },
   ]);
@@ -54,10 +54,11 @@ Bot.on("text", async (ctx) => {
 });
 
 Bot.on("callback_query", async (ctx) => {
-  const data = ctx.callbackQuery!.data!.split(/(.+):(.+):(.+)/);
+  const data = ctx.callbackQuery!.data!.split(/(.+):(.+):(.+):(.+)/);
   const step = data[1];
   const source = Number(data[2]);
   const text = data[3];
+  const offset = Number(data[4]);
   switch (step) {
     case "search":
       ctx.deleteMessage();
@@ -65,7 +66,7 @@ Bot.on("callback_query", async (ctx) => {
       break;
     case "info":
       ctx.deleteMessage();
-      info(ctx, source, text);
+      info(ctx, source, text, offset);
       break;
     case "chapter":
       chapter(ctx, source, text);
@@ -103,7 +104,7 @@ async function search(ctx: TelegrafContext, source: number, text: string) {
   const inline_keyboard: CallbackButton[][] = items.map((i) => [
     {
       text: i.title,
-      callback_data: `info:${source}:${i.id}`,
+      callback_data: `info:${source}:${i.id}:0`,
       hide: false,
     },
   ]);
@@ -113,7 +114,12 @@ async function search(ctx: TelegrafContext, source: number, text: string) {
   });
 }
 
-async function info(ctx: TelegrafContext, source: number, id: string) {
+async function info(
+  ctx: TelegrafContext,
+  source: number,
+  id: string,
+  offset: number
+) {
   let info: ItemInfo;
   try {
     switch (source) {
@@ -129,13 +135,51 @@ async function info(ctx: TelegrafContext, source: number, id: string) {
     ctx.reply(`There was an error: ${error}`);
   }
 
-  const inline_keyboard: CallbackButton[][] = info!.chapters.map((c) => [
-    {
-      text: c.title,
-      callback_data: `chapter:${source}:${c.id}`,
-      hide: false,
-    },
-  ]);
+  const inline_keyboard = new Array<Array<CallbackButton>>();
+  const max = 50;
+  const length = info!.chapters.length - offset * max;
+  if (length <= max) {
+    for (let index = offset * max; index < info!.chapters.length; index++) {
+      inline_keyboard.push([
+        {
+          text: `${info!.chapters[index].title}`,
+          callback_data: `chapter:${source}:${info!.chapters[index].title}:0`,
+          hide: false,
+        },
+      ]);
+    }
+    inline_keyboard.push([
+      {
+        text: "<",
+        callback_data: `info:${source}:${id}:${offset === 0 ? 0 : offset - 1}`,
+        hide: false,
+      },
+    ]);
+  } else {
+    for (let index = offset * max; index < max + offset * max; index++) {
+      if (info!.chapters[index]) {
+        inline_keyboard.push([
+          {
+            text: `${info!.chapters[index].title}`,
+            callback_data: `chapter:${source}:${info!.chapters[index].id}:0`,
+            hide: false,
+          },
+        ]);
+      }
+    }
+    inline_keyboard.push([
+      {
+        text: "<",
+        callback_data: `info:${source}:${id}:${offset === 0 ? 0 : offset - 1}`,
+        hide: false,
+      },
+      {
+        text: ">",
+        callback_data: `info:${source}:${id}:${offset + 1}`,
+        hide: false,
+      },
+    ]);
+  }
 
   ctx.replyWithPhoto(info!.image, {
     caption: info!.item.title,

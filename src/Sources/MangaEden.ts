@@ -26,16 +26,20 @@ export async function info_mangaeden(id: string) {
     const { MANGAEDEN_URL } = process.env;
     const response = await fetch(`${MANGAEDEN_URL}/api/manga/${id}`);
     const json = await response.json();
-    const chapters: Chapter[] = json.chapters.map((c: any[]) => ({
-      id: c[3],
-      title: `${c[0]} - ${c[2]}`,
-    }));
+    const chapters: Chapter[] = json.chapters
+      .map((c: any[]) => ({
+        id: c[3],
+        title: `${c[0]} - ${c[2]}`,
+      }))
+      .reverse();
     const manga: ItemInfo = {
       item: {
         id,
         title: `${json.title} | Author: ${json.author} | Artist: ${json.artist}`,
       },
-      image: `https://cdn.mangaeden.com/mangasimg/${json.image}`,
+      image: json.image
+        ? `https://cdn.mangaeden.com/mangasimg/${json.image}`
+        : "https://via.placeholder.com/150",
       chapters,
     };
     return manga;
